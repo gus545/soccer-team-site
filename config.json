@@ -1,0 +1,10 @@
+{
+  "association_id": 26108,
+  "league_slug": "ottawarecsports",
+  "team_name": "The 7 Deadly Shins",
+  "season_prefix": "Sun-Soccer",
+  "seasons_to_show": 2,
+  "timezone": "America/Toronto",
+  "site_url": "https://soccer.macgillivary.dev",
+  "calendar_file": "shins.ics"
+}

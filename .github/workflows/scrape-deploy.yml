@@ -1,0 +1,74 @@
+name: Scrape & deploy
+
+on:
+  schedule:
+    # Every 3 hours, plus every 30 min on Sunday afternoons/evenings Ottawa time
+    # (cron is UTC: 18:00-04:59 UTC Sun = 1-11:59 PM EST).
+    - cron: '17 */3 * * *'
+    - cron: '*/30 18-23 * * 0'
+    - cron: '*/30 0-4 * * 1'
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Test
+        run: pip install pytest && python -m pytest -q
+
+      - name: Scrape TeamLinkt & build site
+        run: python -m ors.build dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: dist/
+          if-no-files-found: error
+
+  deploy:
+    needs: build
+    # Skipped until the S3_BUCKET / DEPLOY_ROLE_ARN repo variables are set (see README).
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      DEPLOY_ROLE_ARN: ${{ vars.DEPLOY_ROLE_ARN }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: dist
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Short cache everywhere: content changes a few times a week and CloudFront
+      # re-checks after 5 minutes, so no invalidations are needed.
+      - name: Upload site
+        run: |
+          aws s3 sync dist/ "s3://$S3_BUCKET" --delete \
+            --exclude "*.ics" \
+            --cache-control "public, max-age=300"
+          aws s3 cp dist/shins.ics "s3://$S3_BUCKET/shins.ics" \
+            --content-type "text/calendar; charset=utf-8" \
+            --cache-control "public, max-age=300"

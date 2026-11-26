@@ -1,0 +1,4 @@
+{
+  "_comment": "Shirt colours per team (names as they appear on TeamLinkt, case-insensitive). TeamLinkt does not publish colours, so fill these in by hand. 'alt' is what our team wears on a clash.",
+  "The 7 Deadly Shins": { "primary": "TBD", "secondary": "TBD", "alt": "pinnies" }
+}
