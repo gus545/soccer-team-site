@@ -129,3 +129,33 @@ h3 { font-size: 1.05rem; margin: 28px 0 10px; }
 .prior > summary .chips li { padding: 2px 10px; font-size: .9rem; }
 
 footer { margin-top: 36px; font-size: .85rem; color: var(--muted); }
+
+/* -- Attendance ------------------------------------------------------------------- */
+.rsvp { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.rsvp-q { margin: 0 0 10px; font-weight: 700; }
+.rsvp-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.rsvp-btns button {
+  font: inherit; font-weight: 700; font-size: 1rem; padding: 12px 6px; min-height: 48px;
+  border-radius: 12px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer;
+}
+.rsvp-btns button[aria-pressed="true"][data-status="in"] { background: var(--win); border-color: var(--win); color: #fff; }
+.rsvp-btns button[aria-pressed="true"][data-status="maybe"] { background: var(--tie); border-color: var(--tie); color: #fff; }
+.rsvp-btns button[aria-pressed="true"][data-status="out"] { background: var(--loss); border-color: var(--loss); color: #fff; }
+.rsvp-btns button:disabled { opacity: .6; cursor: progress; }
+.rsvp.loading .rsvp-groups { opacity: .5; }
+.rsvp-name { margin-top: 12px; }
+.rsvp-name label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+.rsvp-name-row { display: flex; gap: 8px; }
+.rsvp-name input { flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.rsvp-name button { font: inherit; font-weight: 700; padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.rsvp-who { margin: 10px 0 0; font-size: .85rem; color: var(--muted); }
+.link { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; }
+.rsvp-err { margin: 10px 0 0; color: var(--loss); font-size: .9rem; }
+.rsvp-groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+.rsvp-group h4 { margin: 0 0 6px; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.rsvp-group h4 span { font-variant-numeric: tabular-nums; color: var(--ink); }
+.rsvp-in h4 span { color: var(--win); }
+.rsvp-group ul { list-style: none; margin: 0; padding: 0; font-size: .92rem; }
+.rsvp-group li { overflow-wrap: anywhere; padding: 1px 0; }
+.rsvp-group li.me { font-weight: 700; }
+@media (max-width: 520px) { .rsvp-groups { gap: 8px; } .rsvp-group ul { font-size: .85rem; } }

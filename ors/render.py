@@ -61,7 +61,36 @@ def _next_card(g: Game | None, now: datetime) -> str:
     <div><dt>We're</dt><dd>{'Home' if g.side == 'HOME' else 'Away'}{' · exhibition' if g.exhibition else ''}</dd></div>
     <div><dt>Wear</dt><dd>{_swatch(kit.get('wear', ''))}<strong>{e(kit.get('wear', '?'))}</strong> <span class="muted">— {e(kit.get('reason', ''))}</span></dd></div>
   </dl>
+  {_rsvp(g)}
 </section>"""
+
+
+def _rsvp(g: Game) -> str:
+    if not g.event_id:
+        return ""
+    groups = "".join(
+        f'<div class="rsvp-group rsvp-{s}"><h4>{label} <span data-count="{s}">0</span></h4><ul data-list="{s}"></ul></div>'
+        for s, label in (("in", "In"), ("maybe", "Maybe"), ("out", "Out"))
+    )
+    return f"""<div class="rsvp loading" id="rsvp" data-game="{g.event_id}">
+    <p class="rsvp-q">Are you playing?</p>
+    <div class="rsvp-btns" role="group" aria-label="Your attendance">
+      <button type="button" data-status="in" aria-pressed="false">👍 In</button>
+      <button type="button" data-status="maybe" aria-pressed="false">🤔 Maybe</button>
+      <button type="button" data-status="out" aria-pressed="false">👎 Out</button>
+    </div>
+    <form class="rsvp-name" hidden>
+      <label for="rsvp-name-input">Your name (just once)</label>
+      <div class="rsvp-name-row">
+        <input id="rsvp-name-input" list="rsvp-names" maxlength="30" autocomplete="given-name" placeholder="e.g. Angus" required>
+        <button type="submit">Save</button>
+      </div>
+      <datalist id="rsvp-names"></datalist>
+    </form>
+    <p class="rsvp-who" hidden>Answering as <b></b> · <button type="button" class="link">not you?</button></p>
+    <p class="rsvp-err" role="alert" hidden></p>
+    <div class="rsvp-groups">{groups}</div>
+  </div>"""
 
 
 def _games_list(games: list[Game], now: datetime) -> str:
@@ -193,6 +222,7 @@ def render_page(cfg: dict, seasons: list[dict], next_game: Game | None, now: dat
     <p>Updated {e(updated)} from <a href="https://leagues.teamlinkt.com/{e(cfg['league_slug'])}/Schedule" target="_blank" rel="noopener">TeamLinkt</a> · <a href="data.json">data.json</a></p>
   </footer>
 </main>
+<script src="rsvp.js" defer></script>
 <script>
 document.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', async () => {{
   try {{ await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'Copied!'; }}

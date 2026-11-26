@@ -1,8 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
 Description: >-
-  soccer.macgillivary.dev - static team page (S3 + CloudFront + ACM + Route 53) and a
-  GitHub Actions OIDC role that can publish to it. Deploy in us-east-1 (CloudFront certs
-  must live there).
+  soccer.macgillivary.dev - static team page (S3 + CloudFront + ACM + Route 53), an
+  attendance API (Lambda + DynamoDB at /api/*), and a GitHub Actions OIDC role that can
+  publish the site. Deploy in us-east-1 (CloudFront certs must live there) with sam deploy.
 
 Parameters:
   DomainName:
@@ -26,6 +27,49 @@ Conditions:
   DefaultOIDC: !Equals [!Ref GitHubOIDCProviderArn, '']
 
 Resources:
+  # -- Attendance API ------------------------------------------------------------------
+  AttendanceTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: game, AttributeType: S }
+        - { AttributeName: player, AttributeType: S }
+      KeySchema:
+        - { AttributeName: game, KeyType: HASH }
+        - { AttributeName: player, KeyType: RANGE }
+      TimeToLiveSpecification:
+        AttributeName: expires
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  AttendanceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../api/
+      Handler: attendance.handler
+      Runtime: python3.12
+      Architectures: [arm64]
+      MemorySize: 256
+      Timeout: 10
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AttendanceTable
+          SITE_DATA_URL: !Sub 'https://${DomainName}/data.json'
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AttendanceTable
+      FunctionUrlConfig:
+        AuthType: NONE
+
+  AttendanceLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AttendanceFunction}'
+      RetentionInDays: 14
+
+  # -- Static site ---------------------------------------------------------------------
   Certificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
@@ -79,6 +123,23 @@ Resources:
             DomainName: !GetAtt SiteBucket.RegionalDomainName
             OriginAccessControlId: !GetAtt OriginAccessControl.Id
             S3OriginConfig: { OriginAccessIdentity: '' }
+          - Id: api
+            # FunctionUrl is https://<id>.lambda-url.<region>.on.aws/ -> take the host.
+            DomainName: !Select [2, !Split ['/', !GetAtt AttendanceFunctionUrl.FunctionUrl]]
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            # Managed-CachingDisabled
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            # Managed-AllViewerExceptHostHeader (Function URLs reject a foreign Host)
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
         DefaultCacheBehavior:
           TargetOriginId: s3
           ViewerProtocolPolicy: redirect-to-https

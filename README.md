@@ -27,16 +27,28 @@ TeamLinkt doesn't publish team colours, so set them in `colours.json`. Fill in o
 opponents if you know theirs. The rule is the same as in the Discord bot: home wears primary, and
 away switches to secondary (then `alt`) on a clash.
 
+## Attendance
+
+The next-game card has **In / Maybe / Out** buttons. The first tap asks for your name, the
+browser remembers it, and tapping your current answer again clears it. There's no login, to keep
+it as easy as an Instagram poll. Share `https://soccer.macgillivary.dev/#rsvp` in the group chat.
+
+`api/attendance.py` is a Lambda function served through CloudFront at `/api/attendance`, storing
+answers in DynamoDB (they expire after 120 days). It only accepts games listed in the published
+`data.json`, keeps names short and plain, and allows at most 40 entries per game.
+
 ## Deploy
 
-One-time infra (us-east-1, because CloudFront certificates must live there):
+Infra and the attendance API (us-east-1, because CloudFront certificates must live there).
+Re-run this after changing `infra/` or `api/`:
 
 ```
-aws login
+aws login --remote        # on WSL; plain `aws login` works where the browser callback does
 ZONE=$(aws route53 list-hosted-zones-by-name --dns-name macgillivary.dev \
         --query 'HostedZones[0].Id' --output text | cut -d/ -f3)
-aws cloudformation deploy --region us-east-1 --stack-name ors-soccer \
-  --template-file infra/template.yml --capabilities CAPABILITY_NAMED_IAM \
+sam deploy --template-file infra/template.yml --stack-name ors-soccer --region us-east-1 \
+  --resolve-s3 --s3-prefix ors-soccer \
+  --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
   --parameter-overrides HostedZoneId=$ZONE GitHubRepo=gus545/soccer-team-site
 aws cloudformation describe-stacks --region us-east-1 --stack-name ors-soccer \
   --query 'Stacks[0].Outputs' --output table
