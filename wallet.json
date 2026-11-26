@@ -1,0 +1,12 @@
+{
+  "_comment": "Team wallet shown on the site. Add one entry per payment: positive amount = money in, negative = money out. Set 'who' on a player's payment so it counts toward their dues. Everything here is public on the site.",
+  "currency": "CAD",
+  "how_to_pay": "",
+  "dues": {
+    "label": "Winter 2026-27 dues",
+    "amount": 0,
+    "since": "2026-11-01",
+    "players": []
+  },
+  "entries": []
+}

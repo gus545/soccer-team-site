@@ -17,6 +17,7 @@ from .ics import build_calendar
 from .model import apply_kits, norm, orient, parse_event, parse_standings
 from .render import render_page
 from .teamlinkt import TeamLinkt
+from .wallet import summarise, to_json as wallet_json
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -82,9 +83,18 @@ def scrape_season(tl: TeamLinkt, cfg: dict, season: dict, colours: dict, tz: Zon
     }
 
 
-def build(out_dir: Path, *, cfg: dict | None = None, colours: dict | None = None, now=None) -> dict:
+def load_wallet() -> dict | None:
+    path = ROOT / "wallet.json"
+    return json.loads(path.read_text()) if path.exists() else None
+
+
+def build(
+    out_dir: Path, *, cfg: dict | None = None, colours: dict | None = None, wallet: dict | None = None, now=None
+) -> dict:
     cfg = cfg or json.loads((ROOT / "config.json").read_text())
     colours = colours if colours is not None else json.loads((ROOT / "colours.json").read_text())
+    # Validate the hand-edited ledger before scraping, so a typo fails the build fast.
+    wallet = summarise(wallet if wallet is not None else load_wallet())
     tz = ZoneInfo(cfg["timezone"])
     now = now or datetime.now(tz)
     tl = TeamLinkt(cfg["association_id"], cfg["league_slug"])
@@ -107,10 +117,11 @@ def build(out_dir: Path, *, cfg: dict | None = None, colours: dict | None = None
         "team": cfg["team_name"],
         "next_game": upcoming[0].to_json() if upcoming else None,
         "seasons": [{**s, "games": [g.to_json() for g in s["games"]]} for s in seasons],
+        "wallet": wallet_json(wallet),
     }
     (out_dir / "data.json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     (out_dir / "index.html").write_text(
-        render_page(cfg, seasons, upcoming[0] if upcoming else None, now), encoding="utf-8"
+        render_page(cfg, seasons, upcoming[0] if upcoming else None, now, wallet), encoding="utf-8"
     )
     static = ROOT / "static"
     if static.is_dir():

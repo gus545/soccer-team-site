@@ -37,6 +37,33 @@ it as easy as an Instagram poll. Share `https://soccer.macgillivary.dev/#rsvp` i
 answers in DynamoDB (they expire after 120 days). It only accepts games listed in the published
 `data.json`, keeps names short and plain, and allows at most 40 entries per game.
 
+## Team wallet
+
+The page shows a **Team wallet** card: balance, money in/out, the latest transactions and who
+has paid dues. It's a ledger you edit by hand in `wallet.json` and push, just like `colours.json`.
+There's deliberately no way to change it from the site, since anyone can open the page.
+
+```json
+{
+  "currency": "CAD",
+  "how_to_pay": "e-Transfer the captain",
+  "dues": { "label": "Winter 2026-27 dues", "amount": 100, "since": "2026-11-01",
+            "players": ["Angus", "Bea"] },
+  "entries": [
+    { "date": "2026-11-02", "note": "Winter dues", "amount": 100, "who": "Angus" },
+    { "date": "2026-11-05", "note": "League fee", "amount": -1200 }
+  ]
+}
+```
+
+- Positive amounts are money in, negative are money out. The balance is the sum of all entries.
+- A payment with `who` set counts toward that player's dues if it's dated on or after
+  `dues.since` (names match case-insensitively). Dues are hidden while `amount` is 0 or
+  `players` is empty.
+- A malformed entry (bad date, non-numeric amount, fractions of a cent, missing note) fails the
+  build, so a typo never shows a wrong balance.
+- Everything in `wallet.json` is public on the site and in `data.json`.
+
 ## Deploy
 
 Infra and the attendance API (us-east-1, because CloudFront certificates must live there).

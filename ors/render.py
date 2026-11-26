@@ -8,6 +8,7 @@ from html import escape as e
 from urllib.parse import quote
 
 from .model import Game
+from .wallet import fmt
 
 
 def _day(dt: datetime) -> str:
@@ -93,6 +94,46 @@ def _rsvp(g: Game) -> str:
   </div>"""
 
 
+def _wallet_card(w: dict | None) -> str:
+    if not w:
+        return ""
+    bal = w["balance"]
+    rows = "".join(
+        f"""<li><span class="w-date">{x.date.strftime('%b ')}{x.date.day}</span>"""
+        f"""<span class="w-note">{e(x.note)}{f' <span class="muted">· {e(x.who)}</span>' if x.who else ''}</span>"""
+        f"""<span class="w-amt {'in' if x.amount > 0 else 'out'}">{fmt(x.amount, sign=True)}</span></li>"""
+        for x in w["recent"]
+    )
+    ledger = (
+        f'<h3>Recent</h3><ol class="w-ledger">{rows}</ol>'
+        + (f'<p class="muted w-more">Showing the latest {len(w["recent"])} of {w["count"]}. Full ledger in <a href="data.json">data.json</a> and wallet.json.</p>' if w["count"] > len(w["recent"]) else "")
+        if rows
+        else '<p class="muted">No transactions yet.</p>'
+    )
+    dues = ""
+    if d := w["dues"]:
+        label = {"paid": "Paid", "partial": "Part paid", "owing": "Owes"}
+        people = "".join(
+            f"""<li class="d-{p['status']}"><span>{e(p['name'])}</span><span>{label[p['status']]}{'' if p['status'] == 'paid' else ' ' + fmt(p['owes'])}</span></li>"""
+            for p in d["players"]
+        )
+        dues = f"""<h3>{e(d['label'])} · {fmt(d['amount'])} each</h3>
+    <p class="muted w-dues-sum">{d['paid_count']} of {len(d['players'])} paid{f" · {fmt(d['outstanding'])} still to collect" if d['outstanding'] else ''}</p>
+    <ul class="w-dues">{people}</ul>"""
+    pay = f'<p class="w-pay"><b>How to pay:</b> {e(w["how_to_pay"])}</p>' if w["how_to_pay"] else ""
+    return f"""
+<section class="card wallet" id="wallet">
+  <p class="eyebrow">Team wallet</p>
+  <div class="w-top">
+    <h2 class="w-bal{' neg' if bal < 0 else ''}">{fmt(bal)} <span class="muted">{e(w['currency'])}</span></h2>
+    <ul class="chips"><li><b>{fmt(w['money_in'])}</b><span>in</span></li><li><b>{fmt(w['money_out'])}</b><span>out</span></li></ul>
+  </div>
+  {pay}
+  {dues}
+  {ledger}
+</section>"""
+
+
 def _games_list(games: list[Game], now: datetime) -> str:
     if not games:
         return '<p class="muted">No games scheduled yet.</p>'
@@ -165,7 +206,9 @@ def _season_block(season: dict, now: datetime, *, current: bool, open_: bool = F
     return f"""<details class="season prior"{' open' if open_ else ''}><summary>{e(sub)} {_record_chips(season)}</summary>{inner}</details>"""
 
 
-def render_page(cfg: dict, seasons: list[dict], next_game: Game | None, now: datetime) -> str:
+def render_page(
+    cfg: dict, seasons: list[dict], next_game: Game | None, now: datetime, wallet: dict | None = None
+) -> str:
     cur = seasons[0]
     team = cfg["team_name"]
     host = re.sub(r"^https?://", "", cfg["site_url"]).rstrip("/")
@@ -213,6 +256,8 @@ def render_page(cfg: dict, seasons: list[dict], next_game: Game | None, now: dat
       <button class="btn ghost" type="button" data-copy="{e(ics_https)}">Copy feed URL</button>
     </div>
   </section>
+
+  {_wallet_card(wallet)}
 
   {_season_block(cur, now, current=True)}
 

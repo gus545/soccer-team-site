@@ -159,3 +159,29 @@ footer { margin-top: 36px; font-size: .85rem; color: var(--muted); }
 .rsvp-group li { overflow-wrap: anywhere; padding: 1px 0; }
 .rsvp-group li.me { font-weight: 700; }
 @media (max-width: 520px) { .rsvp-groups { gap: 8px; } .rsvp-group ul { font-size: .85rem; } }
+
+/* -- Team wallet ------------------------------------------------------------------- */
+.w-top { display: flex; gap: 12px 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.w-top .chips { margin: 0; }
+.w-bal { font-size: 2rem; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.w-bal .muted { font-size: .9rem; font-weight: 600; }
+.w-bal.neg { color: var(--loss); }
+.w-pay { margin: 12px 0 0; font-size: .92rem; overflow-wrap: anywhere; }
+.wallet h3 { margin: 20px 0 8px; font-size: .95rem; }
+.w-dues-sum { margin: -4px 0 8px; font-size: .85rem; }
+.w-dues { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+.w-dues li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 9px; border: 1px solid var(--line); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.w-dues li span:first-child { overflow-wrap: anywhere; min-width: 0; }
+.w-dues li span:last-child { white-space: nowrap; font-weight: 600; }
+.w-dues .d-paid span:last-child { color: var(--win); }
+.w-dues .d-partial span:last-child { color: var(--tie); }
+.w-dues .d-owing span:last-child { color: var(--loss); }
+.w-ledger { list-style: none; margin: 0; padding: 0; }
+.w-ledger li { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .92rem; }
+.w-ledger li:first-child { border-top: 0; }
+.w-date { color: var(--muted); font-variant-numeric: tabular-nums; }
+.w-note { min-width: 0; overflow-wrap: anywhere; }
+.w-amt { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.w-amt.in { color: var(--win); }
+.w-amt.out { color: var(--ink); }
+.w-more { font-size: .85rem; margin: 8px 0 0; }
